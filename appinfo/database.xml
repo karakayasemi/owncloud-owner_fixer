@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<database>
+    <name>*dbname*</name>
+    <create>true</create>
+    <overwrite>false</overwrite>
+    <charset>utf8</charset>
+    <table>
+        <name>*dbprefix*owner_fixer_fixed_list</name>
+        <declaration>
+            <field>
+                <name>fileid</name>
+                <type>integer</type>
+                <default>0</default>
+                <notnull>true</notnull>
+                <length>4</length>
+            </field>
+            <field>
+                <name>status</name>
+                <type>integer</type>
+                <default>0</default>
+                <notnull>true</notnull>
+                <length>1</length>
+            </field>
+            <field>
+                <name>timestamp</name>
+                <type>integer</type>
+                <default>0</default>
+                <length>4</length>
+            </field>
+            <index>
+                <name>fileid_index</name>
+                <unique>true</unique>
+                <field>
+                    <name>fileid</name>
+                </field>
+            </index>
+        </declaration>
+    </table>
+</database>

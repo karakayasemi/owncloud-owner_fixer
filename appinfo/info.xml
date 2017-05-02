@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<info>
+	<id>owner_fixer</id>
+	<name>Owner Fixer</name>
+	<description>It takes files ownership from apache and gives to user.
+                    Main purpose of writing this app, use for local filesystem quotation.
+					It also arranges other cache files ownerships.
+        </description>
+	<version>1.0.9</version>
+	<licence>AGPL</licence>
+	<author>Semih Serhat Karakaya</author>
+	<dependencies>
+		<owncloud min-version="9.0" max-version="12.0" />
+	</dependencies>
+	<types>
+		<filesystem/>
+	</types>
+	<background-jobs>
+		<job>\OCA\Owner_Fixer\Cron\FixOwner</job>
+	</background-jobs>
+</info>

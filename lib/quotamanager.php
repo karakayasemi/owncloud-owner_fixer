@@ -44,4 +44,9 @@ class QuotaManager
             return false;
         }
     }
+
+    public static function setQuotaServiceURI($quotaServiceUri)
+    {
+        return \OC::$server->getConfig()->setAppValue('owner_fixer', 'quota_service_uri', $quotaServiceUri);
+    }
 }

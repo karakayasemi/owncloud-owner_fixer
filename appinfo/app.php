@@ -33,3 +33,17 @@ if(OCP\App::isEnabled('user_ldap') === false) {
         'user_ldap is not enabled.',
         OCP\Util::ERROR);
 }
+
+//check dependencies
+if(\OC::$server->getConfig()->getAppValue('owner_fixer', 'quota_service_uri') === null) {
+    OCP\Util::writeLog('owner_fixer',
+        'Quota service URI is not entered.',
+        OCP\Util::ERROR);
+}
+
+//check dependencies
+if(\OC::$server->getConfig()->getAppValue('owner_fixer', 'permission_umask') === null) {
+    OCP\Util::writeLog('owner_fixer',
+        'Permission Umask is not entered.',
+        OCP\Util::ERROR);
+}

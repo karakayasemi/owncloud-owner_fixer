@@ -3,9 +3,9 @@
 	    <h2><?php p($l->t('Owner Fixer')); ?></h2>
         <em><?php p($l->t('To enable owner fixer you should supply quota service')); ?></em>
         <br>
-        <label><?php p($l->t('File permission umask (default 007)')); ?></label>
+        <label><?php p($l->t('File permission umask')); ?></label>
         <br>
-        <input class="permission" id="of-permission" value="<?php echo \OC::$server->getConfig()->getAppValue('owner_fixer', 'permission_umask'); ?>" placeholder="007" type="text">
+        <input class="permission" id="of-permission" value="<?php echo \OC::$server->getConfig()->getAppValue('owner_fixer', 'permission_umask'); ?>" placeholder="Umask" type="text">
         <br>
         <label><?php p($l->t('Quota Service URI (Owner Fixer send http get request to this URI and expects json string)')); ?></label>
         <br>

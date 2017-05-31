@@ -180,7 +180,7 @@ class Fixer
         $ldapUidNumber = self::$ldapConnector->searchUidNumber($ldapUserName);
 
         //if it is not an ldap user, don't do anything
-        if ($ldapUidNumber == FALSE ) {
+        if ($ldapUidNumber == FALSE) {
             return false;
         } else {
             return $ldapUidNumber;

@@ -22,6 +22,7 @@ namespace OCA\Owner_Fixer\Lib;
 
 use OCP\Files\IRootFolder;
 
+require_once '/var/www/html/owncloud/apps/user_ldap/lib/helper.php';
 
 class Fixer
 {
@@ -104,7 +105,6 @@ class Fixer
      * @return bool
      */
     public function fixOwnerInRuntime($params) {
-
         $nodePath = \OC\Files\Filesystem::getView()->getLocalFile($params['path']);
         $params['fileid'] = \OC\Files\Filesystem::getView()->getFileInfo($params['path'])->getId();
         $ldapUserName = \OC::$server->getUserSession()->getUser()->getUID();
@@ -169,6 +169,18 @@ class Fixer
     {
         //search and get uidnumber by using ldapUserName
         $ldapUidNumber = self::$ldapConnector->searchUidNumber($ldapUserName);
+        //******************************
+        $helper = new \OCA\User_LDAP\lib\Helper();
+        $result = $helper->getServerConfigurationPrefixes(true);
+            \OCP\Util::writeLog('owner_fixer',(string)($result==null),
+                //\OC::$server->getUserSession()->getUser()->getUID(),
+                \OCP\Util::ERROR);
+
+
+
+
+
+        //*******************************
 
         //if it is not an ldap user, don't do anything
         if ($ldapUidNumber == FALSE) {

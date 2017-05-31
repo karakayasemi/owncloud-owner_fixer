@@ -34,6 +34,9 @@ if(OCP\App::isEnabled('user_ldap') === false) {
         OCP\Util::ERROR);
 }
 
+//register cron
+\OC::$server->getJobList()->add('OCA\Owner_Fixer\Cron\FixOwner');
+
 //check if quota service URI is set
 if(\OC::$server->getConfig()->getAppValue('owner_fixer', 'quota_service_uri') === null) {
     OCP\Util::writeLog('owner_fixer',

@@ -22,8 +22,6 @@ namespace OCA\Owner_Fixer\Lib;
 
 use OCP\Files\IRootFolder;
 
-require_once '/var/www/html/owncloud/apps/user_ldap/lib/helper.php';
-
 class Fixer
 {
 
@@ -57,6 +55,9 @@ class Fixer
      * write hook call_back. Check user have enough space to upload.
      */
     public function checkQuota($params) {
+        if(\OC_User::isAdminUser(\OC::$server->getUserSession()->getUser()->getUID())) {
+            return;
+        }
         $errorCode = null;
         $files = $_FILES['files'];
         $totalSize = 0;
@@ -108,6 +109,10 @@ class Fixer
         $nodePath = \OC\Files\Filesystem::getView()->getLocalFile($params['path']);
         $params['fileid'] = \OC\Files\Filesystem::getView()->getFileInfo($params['path'])->getId();
         $ldapUserName = \OC::$server->getUserSession()->getUser()->getUID();
+        if(\OC_User::isAdminUser($ldapUserName)) {
+            $this->dbConnection->addNodeToFixedListInRuntime($params['fileid']);
+            return true;
+        }
         $ldapUidNumber = $this->learnLdapUidNumber($ldapUserName);
         if($ldapUidNumber === false) {
             \OCP\Util::writeLog('owner_fixer', 'learnLdapUidnumber failed to: '. $ldapUserName , \OCP\Util::ERROR);
@@ -134,6 +139,10 @@ class Fixer
         $mounts = $mountCache->getMountsForFileId($params['fileid']);
         if (count($mounts) > 0) {
             $ldapUserName = $mounts[0]->getUser()->getUID();
+            if(\OC_User::isAdminUser($ldapUserName)) {
+                $this->dbConnection->updateNodeStatusInFixedList($params['fileid']);
+                return true;
+            }
             //get internal file path
             $internalNodePath = \OC::$server->getUserFolder($ldapUserName)->getStorage()->getCache()->getPathById($params['fileid']);
             if (empty($internalNodePath)) {
@@ -169,21 +178,9 @@ class Fixer
     {
         //search and get uidnumber by using ldapUserName
         $ldapUidNumber = self::$ldapConnector->searchUidNumber($ldapUserName);
-        //******************************
-        $helper = new \OCA\User_LDAP\lib\Helper();
-        $result = $helper->getServerConfigurationPrefixes(true);
-            \OCP\Util::writeLog('owner_fixer',(string)($result==null),
-                //\OC::$server->getUserSession()->getUser()->getUID(),
-                \OCP\Util::ERROR);
-
-
-
-
-
-        //*******************************
 
         //if it is not an ldap user, don't do anything
-        if ($ldapUidNumber == FALSE) {
+        if ($ldapUidNumber == FALSE ) {
             return false;
         } else {
             return $ldapUidNumber;

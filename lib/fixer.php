@@ -22,7 +22,6 @@ namespace OCA\Owner_Fixer\Lib;
 
 use OCP\Files\IRootFolder;
 
-
 class Fixer
 {
 
@@ -56,6 +55,9 @@ class Fixer
      * write hook call_back. Check user have enough space to upload.
      */
     public function checkQuota($params) {
+        if(\OC_User::isAdminUser(\OC::$server->getUserSession()->getUser()->getUID())) {
+            return;
+        }
         $errorCode = null;
         $files = $_FILES['files'];
         $totalSize = 0;
@@ -104,10 +106,13 @@ class Fixer
      * @return bool
      */
     public function fixOwnerInRuntime($params) {
-
         $nodePath = \OC\Files\Filesystem::getView()->getLocalFile($params['path']);
         $params['fileid'] = \OC\Files\Filesystem::getView()->getFileInfo($params['path'])->getId();
         $ldapUserName = \OC::$server->getUserSession()->getUser()->getUID();
+        if(\OC_User::isAdminUser($ldapUserName)) {
+            $this->dbConnection->addNodeToFixedListInRuntime($params['fileid']);
+            return true;
+        }
         $ldapUidNumber = $this->learnLdapUidNumber($ldapUserName);
         if($ldapUidNumber === false) {
             \OCP\Util::writeLog('owner_fixer', 'learnLdapUidnumber failed to: '. $ldapUserName , \OCP\Util::ERROR);
@@ -134,6 +139,10 @@ class Fixer
         $mounts = $mountCache->getMountsForFileId($params['fileid']);
         if (count($mounts) > 0) {
             $ldapUserName = $mounts[0]->getUser()->getUID();
+            if(\OC_User::isAdminUser($ldapUserName)) {
+                $this->dbConnection->updateNodeStatusInFixedList($params['fileid']);
+                return true;
+            }
             //get internal file path
             $internalNodePath = \OC::$server->getUserFolder($ldapUserName)->getStorage()->getCache()->getPathById($params['fileid']);
             if (empty($internalNodePath)) {

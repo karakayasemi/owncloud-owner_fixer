@@ -35,7 +35,7 @@ if(OCP\App::isEnabled('user_ldap') === false) {
 }
 
 //register cron
-\OCP\Backgroundjob::addRegularTask('\OCA\owner_fixer\cron\FixOwner', 'run');
+\OCP\Backgroundjob::addRegularTask('\OCA\Owner_Fixer\Cron\FixOwner', 'run');
 
 //check if quota service URI is set
 if(\OC::$server->getConfig()->getAppValue('owner_fixer', 'quota_service_uri') === null) {

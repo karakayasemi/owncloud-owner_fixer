@@ -65,7 +65,7 @@ class LdapConnector
         $this->search = ldap_search($this->ldapConn, $this->dn, $filter, $result);
         $info = ldap_get_entries($this->ldapConn, $this->search);
         
-        if($info['count']>0){
+        if($info['count']>0 || empty($info[0]['uidnumber'][0])){
             return $info[0]['uidnumber'][0];
         }
         else{ 

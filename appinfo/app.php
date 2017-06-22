@@ -20,31 +20,34 @@
  *
  */
 
+namespace OCA\Owner_Fixer\AppInfo;
+
+use OCP\Util;
+use OCP\App;
 //register app
-$app = new \OCA\Owner_Fixer\AppInfo\Application();
+$app = new Application();
 
 //Admin panel settings page
-OCP\App::registerAdmin( 'owner_fixer', 'settings' );
+App::registerAdmin( 'owner_fixer', 'settings' );
 
 //check dependencies
-if (OCP\App::isEnabled('user_ldap') === false) {
-    OCP\Util::writeLog('owner_fixer',
+if (App::isEnabled('user_ldap') === false) {
+    Util::writeLog('owner_fixer',
         'user_ldap is not enabled.',
-        OCP\Util::ERROR);
+        Util::ERROR);
 
     //check if quota service URI is set
 } else if (\OC::$server->getConfig()->getAppValue('owner_fixer', 'quota_service_uri') == '') {
-    OCP\Util::writeLog('owner_fixer',
+    Util::writeLog('owner_fixer',
         'Quota service URI is not entered.',
-        OCP\Util::ERROR);
+        Util::ERROR);
 
     //check if Permission Umask is set
 } else if (\OC::$server->getConfig()->getAppValue('owner_fixer', 'permission_umask') == '') {
-    OCP\Util::writeLog('owner_fixer',
+    Util::writeLog('owner_fixer',
         'Permission Umask is not entered.',
-        OCP\Util::ERROR);
+        Util::ERROR);
 } else {
-    //if everything is OK, register cron and hooks
+    //if everything is OK, register hooks
     $app->getContainer()->query('Hooks')->register();
-    \OCP\BackgroundJob::addRegularTask('\OCA\Owner_Fixer\Cron\FixOwner', 'run');
 }

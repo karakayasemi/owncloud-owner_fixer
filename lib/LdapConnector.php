@@ -19,7 +19,7 @@
  *
  */
 
-namespace OCA\Owner_Fixer\Lib;
+namespace OCA\Owner_Fixer;
 
 class LdapConnector
 {
@@ -41,7 +41,10 @@ class LdapConnector
         
         //connect to server
         if(($this->ldapConn = ldap_connect($this->ldapHost, $this->ldapPort)) === false) {
-            \OCP\Util::writeLog('owner_fixer', "Could not connect to $this->ldapHost", \OCP\Util::ERROR);
+            \OCP\Util::writeLog(
+                'owner_fixer',
+                "Could not connect to $this->ldapHost",
+                \OCP\Util::ERROR);
             die();
         }
         
@@ -49,7 +52,10 @@ class LdapConnector
         if ($this->ldapConn)
         {
             if((ldap_bind($this->ldapConn, $this->ldapRdn, $this->ldapPass)) === false) {
-                \OCP\Util::writeLog('owner_fixer', "LDAP bind failed to $this->ldapHost", \OCP\Util::ERROR);
+                \OCP\Util::writeLog(
+                    'owner_fixer',
+                    "LDAP bind failed to $this->ldapHost",
+                    \OCP\Util::ERROR);
                 die();
             }
         }

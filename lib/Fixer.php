@@ -18,16 +18,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  */
-namespace OCA\Owner_Fixer\Lib;
+namespace OCA\Owner_Fixer;
 
-use OCP\Files\IRootFolder;
-
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\Util;
 class Fixer
 {
-
-    /** @var IRootFolder*/
-    protected $rootFolder;
-
     /**
      * @var \OCA\Owner_Fixer\Db\DBService $connection
      */
@@ -42,34 +38,39 @@ class Fixer
     /** @var appPath */
     private static $fixerScriptPath;
 
-    public function __construct($ldapConnector, $rootFolder, $dbConnection) {
+    public function __construct($ldapConnector, $dbConnection) {
         self::$ldapConnector = $ldapConnector;
         self::$fixerScriptPath = \OC_App::getAppPath('owner_fixer') . '/lib/owner_fixer';
         self::$nodePermission = \OC::$server->getConfig()->getAppValue('owner_fixer', 'permission_umask');
-        $this->rootFolder = $rootFolder;
         $this->dbConnection = $dbConnection;
     }
 
     /**
-     * @param $params
+     * @param \OCP\Files\Node $node pointing to the file
      * write hook call_back. Check user have enough space to upload.
      */
-    public function checkQuota($params) {
-        if(\OC_User::isAdminUser(\OC::$server->getUserSession()->getUser()->getUID())) {
-            return;
-        }
-        $errorCode = null;
-        $files = $_FILES['files'];
-        $totalSize = 0;
+    public function checkQuota($node) {
         $l = \OC::$server->getL10N('owner_fixer');
 
-        //calculate total uploaded file size
-        foreach ($files['size'] as $size) {
-            $totalSize += $size;
+        if (!isset($_FILES['files'])) {
+            $totalSize = $node->getSize();
+        } else {
+            $files = $_FILES['files'];
+            $totalSize = 0;
+            //calculate total uploaded file size
+            foreach ($files['size'] as $size) {
+                $totalSize += $size;
+            }
+            $totalSize /= 1024;
         }
 
         //learn ldap uidnumber
         $ldapUserName = \OC::$server->getUserSession()->getUser()->getUID();
+
+        if(\OC_User::isAdminUser($ldapUserName)) {
+            return;
+        }
+
         $ldapUidNumber = $this->learnLdapUidNumber($ldapUserName);
         if($ldapUidNumber === false) {
             \OCP\JSON::error(array('data' => array_merge(array('message' => $l->t('Ldap kullanıcısı değilsiniz. Yükleme yapılamaz.')))));
@@ -81,7 +82,6 @@ class Fixer
 
         //if quota manager not responding, return json error and kill all process
         if ($quotaResponse === false) {
-            $params['run'] = FALSE;
             \OCP\JSON::error(array('data' => array_merge(array('message' => $l->t('Kota servisi yanıt vermiyor.')))));
             die();
         }
@@ -89,12 +89,10 @@ class Fixer
         //parse result determine quotaLimit and currentUsage
         $quotaLimit = $quotaResponse['quota_limit'];
         $currentUsage = $quotaResponse['current_usage'];
-        $totalSize /= 1024;
 
         // TODO: l10n files will be arrange.
         //check have user enough space. if have not set an error message
         if ($currentUsage + $totalSize > $quotaLimit) {
-            $params['run'] = FALSE;
             \OCP\JSON::error(array('data' => array_merge(array('message' => $l->t('Kota limitini aştınız. Yüklediğiniz dosya %s MB boyutunda, fakat %s MB kullanılabilir disk alanınız var', array(round(($totalSize / 1024), 3), round((($quotaLimit - $currentUsage) / 1024), 3)))))));
             die();
         }
@@ -102,51 +100,60 @@ class Fixer
     }
 
     /**
-     * @param $params
+     * @param \OC\Files\Node\File $node
      * @return bool
      */
-    public function fixOwnerInRuntime($params) {
-        $nodePath = \OC\Files\Filesystem::getView()->getLocalFile($params['path']);
-        $params['fileid'] = \OC\Files\Filesystem::getView()->getFileInfo($params['path'])->getId();
-        $ldapUserName = \OC::$server->getUserSession()->getUser()->getUID();
+    public function fixOwnerInRuntime($node) {
+        $ldapUserName = $node->getOwner()->getUID();
+        $localPath = \OC::$server->getUserFolder($ldapUserName)->getStorage()->getLocalFile($node->getInternalPath());
         if(\OC_User::isAdminUser($ldapUserName)) {
-            $this->dbConnection->addNodeToFixedListInRuntime($params['fileid']);
+            $this->dbConnection->addNodeToFixedListInRuntime($node->getId());
             return true;
         }
         $ldapUidNumber = $this->learnLdapUidNumber($ldapUserName);
         if($ldapUidNumber === false) {
-            \OCP\Util::writeLog('owner_fixer', 'learnLdapUidnumber failed to: '. $ldapUserName , \OCP\Util::ERROR);
+            Util::writeLog(
+                'owner_fixer',
+                'learnLdapUidnumber failed to: '. $ldapUserName ,
+                Util::ERROR);
             return false;
         }
 
         //ldap user found. Fix ownership and permissions by using owner_fixer script
-        $result = $this->fixOwner($nodePath, $ldapUidNumber);
+        $result = $this->fixOwner($localPath, $ldapUidNumber);
         if($result == 0) {
-            $this->dbConnection->addNodeToFixedListInRuntime($params['fileid']);
+            $this->dbConnection->addNodeToFixedListInRuntime($node->getId());
         } else {
-            \OCP\Util::writeLog('owner_fixer', 'owner could not fix. Node Path:'. $nodePath , \OCP\Util::ERROR);
+            Util::writeLog(
+                'owner_fixer',
+                'owner could not fix. Node Path:'. $localPath ,
+                Util::ERROR);
             return false;
         }
         return true;
     }
 
     /**
-     * @param $params
+     * @param int $fileid
      * @return bool
      */
-    public function fixOwnerInCron($params) {
+    public function fixOwnerInCron($fileid) {
         $mountCache = \OC::$server->getMountProviderCollection()->getMountCache();
-        $mounts = $mountCache->getMountsForFileId($params['fileid']);
+        $mounts = $mountCache->getMountsForFileId($fileid);
         if (count($mounts) > 0) {
             $ldapUserName = $mounts[0]->getUser()->getUID();
             if(\OC_User::isAdminUser($ldapUserName)) {
-                $this->dbConnection->updateNodeStatusInFixedList($params['fileid']);
+                $this->dbConnection->updateNodeStatusInFixedList($fileid);
                 return true;
             }
             //get internal file path
-            $internalNodePath = \OC::$server->getUserFolder($ldapUserName)->getStorage()->getCache()->getPathById($params['fileid']);
+            $internalNodePath = \OC::$server->getUserFolder($ldapUserName)
+                ->getStorage()->getCache()->getPathById($fileid);
             if (empty($internalNodePath)) {
-                \OCP\Util::writeLog('owner_fixer', 'Could not find file with fileid:' . $params['fileid'] , \OCP\Util::ERROR);
+                Util::writeLog(
+                    'owner_fixer',
+                    'Could not find file with fileid:' . $fileid ,
+                    Util::ERROR);
                 return false;
             }
             //get local file path
@@ -155,16 +162,22 @@ class Fixer
 
         $ldapUidNumber = $this->learnLdapUidNumber($ldapUserName);
         if($ldapUidNumber === false) {
-            \OCP\Util::writeLog('owner_fixer', 'learnLdapUidnumber failed to: '. $ldapUserName .' Node Path:' . $nodePath , \OCP\Util::ERROR);
+            Util::writeLog(
+                'owner_fixer',
+                'learnLdapUidnumber failed to: '. $ldapUserName .' Node Path:' . $nodePath ,
+                Util::ERROR);
             return false;
         }
 
         //ldap user found. Fix ownership and permissions by using owner_fixer script
         $result = $this->fixOwner($nodePath, $ldapUidNumber);
         if($result == 0) {
-            $this->dbConnection->updateNodeStatusInFixedList($params['fileid']);
+            $this->dbConnection->updateNodeStatusInFixedList($fileid);
         } else {
-            \OCP\Util::writeLog('owner_fixer', 'owner could not fix. Node Path:'. $nodePath , \OCP\Util::ERROR);
+            Util::writeLog(
+                'owner_fixer',
+                'owner could not fix. Node Path:'. $nodePath ,
+                Util::ERROR);
             return false;
         }
         return true;

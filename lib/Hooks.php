@@ -20,33 +20,48 @@
  *
  */
 
-namespace OCA\Owner_Fixer\Lib;
+namespace OCA\Owner_Fixer;
 
+use OCP\Files\IRootFolder;
+/**
+ * Class Hooks
+ * @package OCA\Owner_Fixer\Lib
+ */
 class Hooks {
 
     /** @var Fixer */
     private static $fixer;
 
-    public function __construct($fixer){
+    /** @var IRootFolder*/
+    protected $rootFolder;
+
+    /**
+     * @param Fixer $fixer
+     * @param IRootFolder $rootFolder
+     */
+    public function __construct($fixer, $rootFolder){
         self::$fixer=$fixer;
+        $this->rootFolder = $rootFolder;
     }
     
     public function register()
     {
-        //register preWrite hook to check quota of user, before write operation
-        \OCP\Util::connectHook('OC_Filesystem', 'write', 'OCA\Owner_Fixer\Lib\Hooks', 'preWriteCallback');
+        /**
+         * @param \OC\Files\Node\File $node
+         */
+        $preWriteListener = function ($targetNode) {
+            self::$fixer->checkQuota($targetNode);
+        };
 
-        //register postWrite hook to fix ownerships and permissions
-        \OCP\Util::connectHook('OC_Filesystem', 'post_write', 'OCA\Owner_Fixer\Lib\Hooks', 'postWriteCallback');
-    }
 
-    public static function postWriteCallback($params)
-    {
-        self::$fixer->fixOwnerInRuntime($params);
-    }
+        /**
+         * @param \OC\Files\Node\File $node
+         */
+        $postWriteListener = function ($targetNode) {
+            self::$fixer->fixOwnerInRuntime($targetNode);
+        };
 
-    public static function preWriteCallback($params)
-    {
-        self::$fixer->checkQuota($params);
+        $this->rootFolder->listen('\OC\Files', 'preWrite', $preWriteListener);
+        $this->rootFolder->listen('\OC\Files', 'postWrite', $postWriteListener);
     }
 }

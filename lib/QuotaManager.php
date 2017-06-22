@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  */
-namespace OCA\Owner_Fixer\Lib;
+namespace OCA\Owner_Fixer;
 
 
 
@@ -47,6 +47,6 @@ class QuotaManager
 
     public static function setQuotaServiceURI($quotaServiceUri)
     {
-        return \OC::$server->getConfig()->setAppValue('owner_fixer', 'quota_service_uri', $quotaServiceUri);
+        \OC::$server->getConfig()->setAppValue('owner_fixer', 'quota_service_uri', $quotaServiceUri);
     }
 }

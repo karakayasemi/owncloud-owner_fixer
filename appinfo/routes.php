@@ -26,6 +26,6 @@ $app = new Application();
 $app->registerRoutes($this, array('routes' => array(
 
     //admin settings
-    array('name' => 'admin_settings#save_preferences', 'url' => '/settings/savepreferences', 'verb' => 'POST')
+    array('name' => 'AdminSettings#savePreferences', 'url' => '/settings/savepreferences', 'verb' => 'POST')
 
 )));

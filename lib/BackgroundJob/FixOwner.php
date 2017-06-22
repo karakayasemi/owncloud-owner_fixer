@@ -19,13 +19,13 @@
  *
  */
 
-namespace OCA\Owner_Fixer\Cron;
+namespace OCA\Owner_Fixer\BackgroundJob;
 
 use OCA\Owner_Fixer\Lib\Fixer;
 use OCA\Owner_Fixer\AppInfo\Application;
 
 /**
- * @brief Class for managing the data in the activities
+ * @brief
  */
 class FixOwner extends \OC\BackgroundJob\TimedJob {
     /**
@@ -48,9 +48,8 @@ class FixOwner extends \OC\BackgroundJob\TimedJob {
     protected function run($argument) {
         $files = $this->connection->getNonFixedNodes();
         if(count($files) > 0) {
-            foreach ($files as $file) {
-                $params = $file;
-                $this->fixer->fixOwnerInCron($params);
+            foreach ($files as $fileid) {
+                $this->fixer->fixOwnerInCron($fileid);
             }
         }
     }

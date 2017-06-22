@@ -22,11 +22,12 @@ namespace OCA\Owner_Fixer\AppInfo;
 
 use \OCP\AppFramework\App;
 
-use OCA\Owner_Fixer\Lib\Hooks;
-use OCA\Owner_Fixer\Lib\LdapConnector;
-use OCA\Owner_Fixer\Lib\Fixer;
+use OCA\Owner_Fixer\Hooks;
+use OCA\Owner_Fixer\LdapConnector;
+use OCA\Owner_Fixer\Fixer;
 use OCA\Owner_Fixer\Db\DBService;
 use OCA\Owner_Fixer\Controller\AdminSettingsController;
+use OC\AppFramework\Utility\TimeFactory;
 
 class Application extends App {
 
@@ -50,23 +51,24 @@ class Application extends App {
             return new LdapConnector();
         });
 
+        $container->registerService('DBService', function($c) {
+            return new DBService(
+                $c->query('ServerContainer')->getDb(),
+                new TimeFactory()
+            );
+        });
+
         $container->registerService('Fixer', function($c) {
             return new Fixer(
                 $c->query('LdapConnector'),
-                $c->query('ServerContainer')->getRootFolder(),
                 $c->query('DBService')
             );
         });
 
         $container->registerService('Hooks', function($c) {
             return new Hooks(
-                $c->query('Fixer')
-            );
-        });
-
-        $container->registerService('DBService', function($c) {
-            return new DBService(
-                $c->query('ServerContainer')->getDb()
+                $c->query('Fixer'),
+                $c->query('ServerContainer')->getRootFolder()
             );
         });
         

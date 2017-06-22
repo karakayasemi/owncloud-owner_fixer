@@ -22,7 +22,7 @@
 
 namespace OCA\Owner_Fixer\Db;
 
-use Doctrine\DBAL\Exception\DatabaseObjectExistsException;
+use OC\AppFramework\Utility\TimeFactory;
 use OCP\IDBConnection;
 
 /**
@@ -37,12 +37,19 @@ class DBService {
     private $connection;
 
     /**
+     * @var TimeFactory
+     */
+    private $factory;
+
+    /**
      * DBService constructor.
      *
      * @param IDBConnection $connection
+     * @param TimeFactory $factory
      */
-    public function __construct(IDBConnection $connection) {
+    public function __construct(IDBConnection $connection, TimeFactory $factory) {
         $this->connection = $connection;
+        $this->factory = $factory;
     }
 
     /**
@@ -59,7 +66,8 @@ class DBService {
         foreach ($files as $file) {
                 $this->connection->insertIfNotExist('*PREFIX*owner_fixer_fixed_list', [
                     'fileid' => $file['fileid'],
-                    'status'=>0
+                    'status'=>0,
+                    'timestamp' => $this->factory->getTime()
                 ], ['fileid']);
         }
     }
@@ -68,12 +76,11 @@ class DBService {
      * @param $fileId
      */
     public function addNodeToFixedListInRuntime($fileId) {
-        $builder = $this->connection->getQueryBuilder();
-        $builder->insert('owner_fixer_fixed_list')
-            ->values(array('fileid'=>$fileId,
-                'status'=>2
-                ))
-            ->execute();
+        $this->connection->insertIfNotExist('*PREFIX*owner_fixer_fixed_list', [
+            'fileid' => $fileId,
+            'status' => 2,
+            'timestamp' => $this->factory->getTime()
+            ], ['fileid']);
     }
 
     /**
@@ -84,6 +91,7 @@ class DBService {
         $builder->update('owner_fixer_fixed_list')
             ->where($builder->expr()->eq('fileid',$builder->createNamedParameter($fileId)))
             ->set('status',$builder->createNamedParameter(1))
+            ->set('timestamp', $builder->createNamedParameter($this->factory->getTime()))
             ->execute();
     }
 
@@ -96,7 +104,7 @@ class DBService {
         $builder = $this->connection->getQueryBuilder();
         $files = $builder->select(['fileid'])
             ->from('owner_fixer_fixed_list')
-            ->where("status=0")
+            ->where($builder->expr()->eq('status',$builder->createNamedParameter(0)))
             ->execute()
             ->fetchAll();
         return $files;

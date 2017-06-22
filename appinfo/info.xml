@@ -5,17 +5,18 @@
 	<description>It takes files ownership from apache and gives to user.
                     Main purpose of writing this app, use for local filesystem quotation.
 					It also arranges other cache files ownerships.
-        </description>
-	<version>1.0.9</version>
+	</description>
+	<version>1.1.0</version>
+	<namespace>Owner_Fixer</namespace>
 	<licence>AGPL</licence>
 	<author>Semih Serhat Karakaya</author>
 	<dependencies>
-		<owncloud min-version="9.0" max-version="12.0" />
+		<owncloud min-version="9.1.0" max-version="10.3" />
 	</dependencies>
 	<types>
 		<filesystem/>
 	</types>
 	<background-jobs>
-		<job>\OCA\Owner_Fixer\Cron\FixOwner</job>
+		<job>OCA\Owner_Fixer\BackgroundJob\FixOwner</job>
 	</background-jobs>
 </info>

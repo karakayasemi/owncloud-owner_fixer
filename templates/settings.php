@@ -7,7 +7,7 @@
         <br>
         <input class="permission" id="of-permission" value="<?php echo \OC::$server->getConfig()->getAppValue('owner_fixer', 'permission_umask'); ?>" placeholder="Umask" type="text">
         <br>
-        <label><?php p($l->t('Quota Service URI (Owner Fixer send http get request to this URI and expects json string)')); ?></label>
+        <label><?php p($l->t('Quota Service URI (Owner Fixer send http get request with uid informations in header to this URI and expects json string)')); ?></label>
         <br>
         <em><?php p($l->t('Sample Response: {"quota_limit":10000,"current_usage":5000}')); ?></em>
         <br>

@@ -46,6 +46,7 @@ class FixOwner extends \OC\BackgroundJob\TimedJob {
     }
 
     protected function run($argument) {
+        return;
         $files = $this->connection->getNonFixedNodes();
         if(count($files) > 0) {
             foreach ($files as $fileid) {

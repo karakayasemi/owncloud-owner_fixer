@@ -84,7 +84,7 @@ class DBService {
     }
 
     /**
-     * @param $fileId
+     * @param int $fileId
      */
     public function updateNodeStatusInFixedList($fileId) {
         $builder = $this->connection->getQueryBuilder();
@@ -127,5 +127,15 @@ class DBService {
             $maxFileId=0;
         }
         return $maxFileId;
+    }
+
+    /**
+     * @param int $fileId
+     */
+    public function deleteFromFixedList($fileid){
+        $builder = $this->connection->getQueryBuilder();
+        $builder->delete('owner_fixer_fixed_list')
+            ->where($builder->expr()->eq('fileid',$builder->createNamedParameter($fileid)))
+            ->execute();
     }
 }

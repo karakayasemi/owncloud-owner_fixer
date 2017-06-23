@@ -49,7 +49,7 @@ class FixOwner extends \OC\BackgroundJob\TimedJob {
         $files = $this->connection->getNonFixedNodes();
         if(count($files) > 0) {
             foreach ($files as $fileid) {
-                $this->fixer->fixOwnerInCron($fileid);
+                $this->fixer->fixOwnerInCron($fileid['fileid']);
             }
         }
     }

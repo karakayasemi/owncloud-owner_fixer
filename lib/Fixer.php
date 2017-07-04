@@ -52,6 +52,17 @@ class Fixer
     public function checkQuota($node) {
         $l = \OC::$server->getL10N('owner_fixer');
 
+        $ldapUserName = $node->getStorage()->getOwner($node->getPath());
+        if(\OC_User::isAdminUser($ldapUserName)) {
+            return;
+        }
+
+        $ldapUidNumber = $this->learnLdapUidNumber($ldapUserName);
+        if($ldapUidNumber === false) {
+            \OCP\JSON::error(array('data' => array_merge(array('message' => $l->t('Ldap kullanıcısı değilsiniz. Yükleme yapılamaz.')))));
+            die();
+        }
+
         if (!isset($_FILES['files'])) {
             $totalSize = $node->getSize();
         } else {
@@ -62,19 +73,6 @@ class Fixer
                 $totalSize += $size;
             }
             $totalSize /= 1024;
-        }
-
-        //learn ldap uidnumber
-        $ldapUserName = \OC::$server->getUserSession()->getUser()->getUID();
-
-        if(\OC_User::isAdminUser($ldapUserName)) {
-            return;
-        }
-
-        $ldapUidNumber = $this->learnLdapUidNumber($ldapUserName);
-        if($ldapUidNumber === false) {
-            \OCP\JSON::error(array('data' => array_merge(array('message' => $l->t('Ldap kullanıcısı değilsiniz. Yükleme yapılamaz.')))));
-            die();
         }
 
         //ask user quota
@@ -104,12 +102,25 @@ class Fixer
      * @return bool
      */
     public function fixOwnerInRuntime($node) {
-        $ldapUserName = $node->getOwner()->getUID();
-        $localPath = \OC::$server->getUserFolder($ldapUserName)->getStorage()->getLocalFile($node->getInternalPath());
+        $fileId = $node->getId();
+        $ldapUserName = $this->getOwnerFromFileId($fileId);
+        if ($ldapUserName === false) {
+            Util::writeLog(
+                'owner_fixer',
+                'owner could not fix. Node File Id:'. $fileId ,
+                Util::ERROR);
+            return false;
+        }
+
         if(\OC_User::isAdminUser($ldapUserName)) {
-            $this->dbConnection->addNodeToFixedListInRuntime($node->getId());
+            $this->dbConnection->addNodeToFixedListInRuntime($fileId);
             return true;
         }
+
+        $internalNodePath = \OC::$server->getUserFolder($ldapUserName)
+            ->getStorage()->getCache()->getPathById($fileId);
+        $localPath = \OC::$server->getUserFolder($ldapUserName)->getStorage()->getLocalFile($internalNodePath);
+
         $ldapUidNumber = $this->learnLdapUidNumber($ldapUserName);
         if($ldapUidNumber === false) {
             Util::writeLog(
@@ -138,49 +149,36 @@ class Fixer
      * @return bool
      */
     public function fixOwnerInCron($fileId) {
-        $mountCache = \OC::$server->getMountProviderCollection()->getMountCache();
-        $cachedMounts = $mountCache->getMountsForFileId($fileId);
-        if (!empty($cachedMounts)) {
-            $ldapUserName = $cachedMounts[0]->getUser()->getUID();
-            if(\OC_User::isAdminUser($ldapUserName)) {
-                $this->dbConnection->updateNodeStatusInFixedList($fileId);
-                return true;
-            }
-            //get internal file path
-            $internalNodePath = \OC::$server->getUserFolder($ldapUserName)
-                ->getStorage()->getCache()->getPathById($fileId);
-            if (empty($internalNodePath)) {
-                Util::writeLog(
-                    'owner_fixer',
-                    'Could not find file with fileid:' . $fileId ,
-                    Util::ERROR);
-                return false;
-            }
-            error_log($cachedMounts,1);
-            //get local file path
-            $nodePath = \OC::$server->getUserFolder($ldapUserName)->getStorage()->getLocalFile($internalNodePath);
+        $ldapUserName = $this->getOwnerFromFileId($fileId);
+        if ($ldapUserName === false) {
+            Util::writeLog(
+                'owner_fixer',
+                'owner could not fix. Node File Id:'. $fileId ,
+                Util::ERROR);
+            return false;
+        }
 
-            $ldapUidNumber = $this->learnLdapUidNumber($ldapUserName);
-            if($ldapUidNumber === false) {
-                Util::writeLog(
-                    'owner_fixer',
-                    'learnLdapUidnumber failed to: '. $ldapUserName .' Node Path:' . $nodePath ,
-                    Util::ERROR);
-                return false;
-            }
-
-            //ldap user found. Fix ownership and permissions by using owner_fixer script
-            $result = $this->fixOwner($nodePath, $ldapUidNumber);
-            if($result == 0) {
-                $this->dbConnection->updateNodeStatusInFixedList($fileId);
-            } else {
-                Util::writeLog(
-                    'owner_fixer',
-                    'owner could not fix. Node Path:'. $nodePath ,
-                    Util::ERROR);
-                return false;
-            }
+        if(\OC_User::isAdminUser($ldapUserName)) {
+            $this->dbConnection->updateNodeStatusInFixedList($fileId);
             return true;
+        }
+
+        $internalNodePath = \OC::$server->getUserFolder($ldapUserName)
+            ->getStorage()->getCache()->getPathById($fileId);
+        $localPath = \OC::$server->getUserFolder($ldapUserName)->getStorage()->getLocalFile($internalNodePath);
+
+        $ldapUidNumber = $this->learnLdapUidNumber($ldapUserName);
+        if($ldapUidNumber === false) {
+            Util::writeLog(
+                'owner_fixer',
+                'learnLdapUidnumber failed to: '. $ldapUserName ,
+                Util::ERROR);
+            return false;
+        }
+
+        $result = $this->fixOwner($localPath, $ldapUidNumber);
+        if($result == 0) {
+            $this->dbConnection->updateNodeStatusInFixedList($fileId);
         } else {
             $this->dbConnection->deleteFromFixedList($fileId);
         }
@@ -214,6 +212,23 @@ class Fixer
         $output = array();
         exec($script, $output, $returnValue);
         return $returnValue;
+    }
+
+    /**
+     * @param int $fileId
+     * @return string
+     */
+    private function getOwnerFromFileId($fileId)
+    {
+        $mountCache = \OC::$server->getMountProviderCollection()->getMountCache();
+        $cachedMounts = $mountCache->getMountsForFileId($fileId);
+        if (!empty($cachedMounts)) {
+            $mount = reset($cachedMounts);
+            $ldapUserName = $mount->getMountPointNode()->getOwner()->getUID();
+            return $ldapUserName;
+        } else {
+            return false;
+        }
     }
 
 }

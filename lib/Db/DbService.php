@@ -29,7 +29,7 @@ use OCP\IDBConnection;
  * Class DBService
  * @package OCA\Owner_Fixer\Db
  */
-class DBService {
+class DbService {
 
     /**
      * @var IDBConnection

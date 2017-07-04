@@ -25,7 +25,7 @@ use OCP\Util;
 class Fixer
 {
     /**
-     * @var \OCA\Owner_Fixer\Db\DBService $connection
+     * @var \OCA\Owner_Fixer\Db\DbService $connection
      */
     protected $dbConnection;
 

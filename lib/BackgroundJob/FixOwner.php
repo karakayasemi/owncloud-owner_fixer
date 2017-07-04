@@ -29,7 +29,7 @@ use OCA\Owner_Fixer\AppInfo\Application;
  */
 class FixOwner extends \OC\BackgroundJob\TimedJob {
     /**
-     * @var \OCA\Owner_Fixer\db\DBService $connection
+     * @var \OCA\Owner_Fixer\db\DbService $connection
      */
     protected $connection;
 

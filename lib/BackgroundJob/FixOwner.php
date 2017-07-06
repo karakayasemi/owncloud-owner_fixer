@@ -41,12 +41,11 @@ class FixOwner extends \OC\BackgroundJob\TimedJob {
     public function __construct() {
         $app = new Application();
         $container = $app->getContainer();
-        $this->connection = $container->query('DBService');
+        $this->connection = $container->query('DbService');
         $this->fixer = $container->query('Fixer');
     }
 
     protected function run($argument) {
-        return;
         $files = $this->connection->getNonFixedNodes();
         if(count($files) > 0) {
             foreach ($files as $fileid) {

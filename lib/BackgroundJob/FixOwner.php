@@ -21,7 +21,7 @@
 
 namespace OCA\Owner_Fixer\BackgroundJob;
 
-use OCA\Owner_Fixer\Lib\Fixer;
+use OCA\Owner_Fixer\Fixer;
 use OCA\Owner_Fixer\AppInfo\Application;
 
 /**

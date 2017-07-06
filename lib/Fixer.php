@@ -155,6 +155,7 @@ class Fixer
                 'owner_fixer',
                 'owner could not fix. Node File Id:'. $fileId ,
                 Util::ERROR);
+            $this->dbConnection->deleteFromFixedList($fileId);
             return false;
         }
 

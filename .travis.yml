@@ -26,10 +26,6 @@ script:
   - cd apps/owner_fixer/tests;
   - phpunit --configuration phpunit.xml
 
-  # push code coverage to scrutinizer-ci
-  - wget https://scrutinizer-ci.com/ocular.phar
-  - php ocular.phar code-coverage:upload --format=php-clover clover.xml
-
 matrix:
   include:
     - php: 7.0

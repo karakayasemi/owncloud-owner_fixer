@@ -23,10 +23,12 @@ if (!defined('PHPUNIT_RUN')) {
 }
 require_once __DIR__.'/../../../lib/base.php';
 
-\OC::$composerAutoloader->addPsr4('Test\\', OC::$SERVERROOT . '/tests/lib/', true);
+OC::$composerAutoloader->addPsr4('Test\\', OC::$SERVERROOT . '/tests', true);
 
 if(!class_exists('PHPUnit_Framework_TestCase')) {
     require_once('PHPUnit/Autoload.php');
 }
 
-\OC_App::loadApp('owner_fixer');
+OC_App::loadApp('owner_fixer');
+
+OC_Hook::clear();

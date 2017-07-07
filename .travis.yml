@@ -15,7 +15,7 @@ branches:
     - master
 
 install:
-  - mv karakayasemi/owncloud-owner_fixer owner_fixer
+  - mv owncloud-owner_fixer ../owner_fixer
   - wget https://raw.githubusercontent.com/owncloud/administration/master/travis-ci/before_install.sh
   - bash ./before_install.sh owner_fixer $CORE_BRANCH $DB
   - cd ../core

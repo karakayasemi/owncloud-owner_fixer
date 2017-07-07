@@ -23,8 +23,7 @@ install:
 
 script:
   # execute unit tests
-  - cd apps/owner_fixer/tests;
-  - cat Db/*
+  - cd apps/owner_fixer/tests
   - phpunit --configuration phpunit.xml
 
 matrix:

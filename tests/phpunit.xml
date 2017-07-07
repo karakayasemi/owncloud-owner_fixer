@@ -7,6 +7,6 @@
          timeoutForLargeTests="900"
 >
     <testsuite name='ownCloud - Owner_Fixer App Tests'>
-        <directory suffix='Test.php'>.</directory>
+        <directory>../tests</directory>
     </testsuite>
 </phpunit>

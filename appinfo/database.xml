@@ -28,7 +28,7 @@
                 <length>4</length>
             </field>
             <index>
-                <name>fileid_index</name>
+                <name>owner_fixer_fileid_index</name>
                 <unique>true</unique>
                 <field>
                     <name>fileid</name>

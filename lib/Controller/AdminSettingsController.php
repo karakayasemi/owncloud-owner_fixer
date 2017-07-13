@@ -15,21 +15,22 @@ use OCP\IRequest;
 
 class AdminSettingsController extends ApiController
 {
-
-    public function __construct($appName, IRequest $request)
+    /** @var  QuotaManager $quotaManager */
+    protected $quotaManager;
+    public function __construct($appName, IRequest $request, $quotaManager)
     {
         parent::__construct($appName, $request);
+        $this->quotaManager = $quotaManager;
     }
 
     public function savePreferences($quotaServiceUri, $permissionUmask) {
         $changes = false;
-        \OCP\User::checkAdminUser();
         if(empty($quotaServiceUri) || empty($permissionUmask)) {
-            return new JSONResponse(array('message' => 'Preferences can not be empty, 
-                previous values are not changed.'));
+            return new JSONResponse(array(
+                'message' => 'Preferences can not be empty, previous values are not changed.'));
         }
         if(\OC::$server->getConfig()->getAppValue('owner_fixer', 'quota_service_uri') !== $quotaServiceUri) {
-            QuotaManager::setQuotaServiceURI($quotaServiceUri);
+            $this->quotaManager->setQuotaServiceURI($quotaServiceUri);
             $changes = true;
         }
         if(\OC::$server->getConfig()->getAppValue('owner_fixer', 'permission_umask') !== $permissionUmask) {

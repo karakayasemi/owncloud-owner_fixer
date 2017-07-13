@@ -20,6 +20,7 @@
  */
 namespace OCA\Owner_Fixer\AppInfo;
 
+use OCA\Owner_Fixer\QuotaManager;
 use \OCP\AppFramework\App;
 
 use OCA\Owner_Fixer\Hooks;
@@ -43,8 +44,13 @@ class Application extends App {
         $container->registerService('AdminSettingsController', function($c) {
             return new AdminSettingsController(
                 $c->query('AppName'),
-                $c->query('Request')
+                $c->query('Request'),
+                $c->query('QuotaManager')
             );
+        });
+
+        $container->registerService('QuotaManager', function() {
+            return new QuotaManager(\OC::$server->getHTTPClientService()->newClient());
         });
 
         $container->registerService('LdapConnector', function($c) {
@@ -61,7 +67,8 @@ class Application extends App {
         $container->registerService('Fixer', function($c) {
             return new Fixer(
                 $c->query('LdapConnector'),
-                $c->query('DbService')
+                $c->query('DbService'),
+                $c->query('QuotaManager')
             );
         });
 
@@ -71,7 +78,6 @@ class Application extends App {
                 $c->query('ServerContainer')->getRootFolder()
             );
         });
-        
     }
 }
 

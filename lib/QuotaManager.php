@@ -20,19 +20,29 @@
  */
 namespace OCA\Owner_Fixer;
 
-
-
 use OCP\AppFramework\Http;
+use OCP\Http\Client\IClient;
 
 class QuotaManager
 {
-    public static function getQuotaByUid($ldapUidNumber)
+    /**
+     * @var IClient $client
+     */
+    protected $client;
+
+    /**
+     * @param IClient $client
+     */
+    public function __construct($client) {
+        $this->client = $client;
+    }
+
+    public function getQuotaByUid($ldapUidNumber)
     {
         $quotServiceHost = \OC::$server->getConfig()->getAppValue('owner_fixer', 'quota_service_uri');
         $options['headers']=array('uid'=>$ldapUidNumber);
-        $client = \OC::$server->getHTTPClientService()->newClient();
         try {
-            $response = $client->get($quotServiceHost, $options);
+            $response = $this->client->get($quotServiceHost, $options);
         } catch (\Exception $e) {
             \OCP\Util::writeLog('owner_fixer', $e->getMessage(), \OCP\Util::ERROR);
             return false;
@@ -45,7 +55,7 @@ class QuotaManager
         }
     }
 
-    public static function setQuotaServiceURI($quotaServiceUri)
+    public function setQuotaServiceURI($quotaServiceUri)
     {
         \OC::$server->getConfig()->setAppValue('owner_fixer', 'quota_service_uri', $quotaServiceUri);
     }

@@ -20,29 +20,33 @@
  */
 namespace OCA\Owner_Fixer;
 
-use OCP\AppFramework\Http\JSONResponse;
+use OCA\Owner_Fixer\Db\DbService;
 use OCP\Util;
 class Fixer
 {
     /**
-     * @var \OCA\Owner_Fixer\Db\DbService $connection
+     * @var DbService $connection
      */
-    protected $dbConnection;
+    protected $dbService;
 
     /** @var LdapConnector */
     private static $ldapConnector;
 
-    /** @var nodePermission */
+    /** @var string */
     private static $nodePermission;
 
-    /** @var appPath */
+    /** @var string */
     private static $fixerScriptPath;
 
-    public function __construct($ldapConnector, $dbConnection) {
+    /** @var QuotaManager */
+    protected $quotaManager;
+
+    public function __construct($ldapConnector, $dbService, $quotaManager) {
         self::$ldapConnector = $ldapConnector;
         self::$fixerScriptPath = \OC_App::getAppPath('owner_fixer') . '/lib/owner_fixer';
         self::$nodePermission = \OC::$server->getConfig()->getAppValue('owner_fixer', 'permission_umask');
-        $this->dbConnection = $dbConnection;
+        $this->dbService = $dbService;
+        $this->quotaManager = $quotaManager;
     }
 
     /**
@@ -76,7 +80,7 @@ class Fixer
         }
 
         //ask user quota
-        $quotaResponse = QuotaManager::getQuotaByUid($ldapUidNumber);
+        $quotaResponse = $this->quotaManager->getQuotaByUid($ldapUidNumber);
 
         //if quota manager not responding, return json error and kill all process
         if ($quotaResponse === false) {
@@ -113,7 +117,7 @@ class Fixer
         }
 
         if(\OC_User::isAdminUser($ldapUserName)) {
-            $this->dbConnection->addNodeToFixedListInRuntime($fileId);
+            $this->dbService->addNodeToFixedListInRuntime($fileId);
             return true;
         }
 
@@ -133,7 +137,7 @@ class Fixer
         //ldap user found. Fix ownership and permissions by using owner_fixer script
         $result = $this->fixOwner($localPath, $ldapUidNumber);
         if($result == 0) {
-            $this->dbConnection->addNodeToFixedListInRuntime($node->getId());
+            $this->dbService->addNodeToFixedListInRuntime($node->getId());
         } else {
             Util::writeLog(
                 'owner_fixer',
@@ -155,12 +159,12 @@ class Fixer
                 'owner_fixer',
                 'owner could not fix. Node File Id:'. $fileId ,
                 Util::ERROR);
-            $this->dbConnection->deleteFromFixedList($fileId);
+            $this->dbService->deleteFromFixedList($fileId);
             return false;
         }
 
         if(\OC_User::isAdminUser($ldapUserName)) {
-            $this->dbConnection->updateNodeStatusInFixedList($fileId);
+            $this->dbService->updateNodeStatusInFixedList($fileId);
             return true;
         }
 
@@ -179,9 +183,9 @@ class Fixer
 
         $result = $this->fixOwner($localPath, $ldapUidNumber);
         if($result == 0) {
-            $this->dbConnection->updateNodeStatusInFixedList($fileId);
+            $this->dbService->updateNodeStatusInFixedList($fileId);
         } else {
-            $this->dbConnection->deleteFromFixedList($fileId);
+            $this->dbService->deleteFromFixedList($fileId);
         }
     }
 

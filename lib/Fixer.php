@@ -21,6 +21,7 @@
 namespace OCA\Owner_Fixer;
 
 use OCA\Owner_Fixer\Db\DbService;
+use OCP\Files\NotFoundException;
 use OCP\Util;
 class Fixer
 {
@@ -68,7 +69,11 @@ class Fixer
         }
 
         if (!isset($_FILES['files'])) {
-            $totalSize = $node->getSize();
+        	try {
+				$totalSize = $node->getSize();
+			} catch (NotFoundException $e) {
+        		$totalSize = 0;
+			}
         } else {
             $files = $_FILES['files'];
             $totalSize = 0;
